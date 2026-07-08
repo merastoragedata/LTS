@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MSETCL LTS Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+:root{
+  --bg:#0c141f; --panel:#131f2e; --panel2:#18273a; --line:#26384f; --line2:#32506f;
+  --ink:#e8eff8; --muted:#8ea6c1; --accent:#3ac2e6; --accent-dim:#1c6f86;
+  --live:#42c464; --alarm:#f4b740; --trip:#ff5c5c; --copper:#e0913c;
+  --r:12px; --mono:'IBM Plex Mono',ui-monospace,monospace; --ui:'Inter',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:radial-gradient(1200px 700px at 80% -10%,#12243a 0%,var(--bg) 55%) fixed;
+  color:var(--ink);font-family:var(--ui);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit}
+a{color:var(--accent)}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:#2a3f59;border-radius:8px}
+.hidden{display:none !important}
+.mono{font-family:var(--mono)}
+.muted{color:var(--muted)}
+
+/* ---------- buttons / inputs ---------- */
+.btn{background:var(--panel2);color:var(--ink);border:1px solid var(--line2);border-radius:9px;
+  padding:8px 13px;font-weight:600;font-size:13px;transition:.15s;display:inline-flex;gap:7px;align-items:center}
+.btn:hover{border-color:var(--accent);color:#fff}
+.btn.primary{background:linear-gradient(180deg,#3ac2e6,#2597b6);border-color:#3ac2e6;color:#05202a}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.ghost{background:transparent}
+.btn.danger{border-color:#7a2e2e;color:#ff9c9c}
+.btn.danger:hover{background:#3a1c1c;border-color:var(--trip)}
+.btn.sm{padding:5px 9px;font-size:12px;border-radius:8px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+label.fld{display:block;margin:0 0 12px}
+label.fld > span{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+input.in,select.in,textarea.in{width:100%;background:#0e1926;border:1px solid var(--line);color:var(--ink);
+  border-radius:9px;padding:9px 11px;font-size:13px}
+input.in:focus,select.in:focus,textarea.in:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(58,194,230,.14)}
+textarea.in{resize:vertical}
+.pill{font-size:11px;padding:2px 9px;border-radius:999px;font-weight:600;border:1px solid var(--line2)}
+.pill.ok{color:var(--live);border-color:#2c6b3f;background:#122417}
+.pill.warn{color:var(--alarm);border-color:#6b5a26;background:#241f11}
+.pill.off{color:var(--muted)}
+.pill.other{color:var(--copper);border-color:#6b4b26;background:#241a10}
+
+/* ---------- login ---------- */
+#login{min-height:100%;display:grid;place-items:center;padding:24px}
+.card{background:linear-gradient(180deg,rgba(24,39,58,.9),rgba(19,31,46,.95));
+  border:1px solid var(--line);border-radius:18px;box-shadow:0 24px 70px rgba(0,0,0,.5)}
+.login-box{width:min(430px,94vw);padding:30px}
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:4px}
+.brand .spark{width:38px;height:38px;border-radius:10px;background:linear-gradient(160deg,#3ac2e6,#1c6f86);
+  display:grid;place-items:center;box-shadow:0 0 22px rgba(58,194,230,.5)}
+.brand h1{font-size:19px;margin:0;font-weight:800;letter-spacing:-.01em}
+.brand .sub{font-size:11px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase}
+.tabsw{display:flex;background:#0e1926;border:1px solid var(--line);border-radius:11px;padding:4px;margin:20px 0}
+.tabsw button{flex:1;background:none;border:none;color:var(--muted);padding:8px;border-radius:8px;font-weight:600;font-size:13px}
+.tabsw button.on{background:var(--panel2);color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+
+/* ---------- app shell ---------- */
+#app{min-height:100%;display:flex;flex-direction:column}
+.topbar{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:14px;padding:11px 18px;
+  background:rgba(12,20,31,.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.topbar .grow{flex:1}
+.subselect{display:flex;align-items:center;gap:8px;background:#0e1926;border:1px solid var(--line2);
+  border-radius:10px;padding:4px 4px 4px 12px}
+.subselect .dot{width:8px;height:8px;border-radius:50%;background:var(--live);box-shadow:0 0 8px var(--live)}
+.subselect select{background:none;border:none;color:#fff;font-weight:700;font-size:13px;padding:5px}
+.userchip{display:flex;align-items:center;gap:9px;font-size:12px}
+.userchip .av{width:30px;height:30px;border-radius:8px;background:var(--panel2);border:1px solid var(--line2);
+  display:grid;place-items:center;font-weight:700;color:var(--accent)}
+.nav{display:flex;gap:4px;padding:8px 14px 0;border-bottom:1px solid var(--line);background:rgba(12,20,31,.5);
+  position:sticky;top:56px;z-index:30;overflow-x:auto}
+.nav button{background:none;border:none;color:var(--muted);padding:10px 15px;font-weight:600;font-size:13px;
+  border-bottom:2px solid transparent;white-space:nowrap}
+.nav button.on{color:#fff;border-color:var(--accent)}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 18px 60px;width:100%}
+.viewhd{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+.viewhd h2{margin:0;font-size:22px;font-weight:800;letter-spacing:-.02em}
+.viewhd p{margin:3px 0 0;color:var(--muted);font-size:13px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ---------- LTS cards ---------- */
+.section-t{display:flex;align-items:center;gap:10px;margin:22px 0 12px;font-size:13px;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.section-t::after{content:"";flex:1;height:1px;background:var(--line)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+.lts{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:15px;position:relative;
+  transition:.15s;overflow:hidden}
+.lts::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent)}
+.lts.uv::before{background:var(--alarm)}
+.lts.line::before{background:var(--copper)}
+.lts:hover{border-color:var(--line2);transform:translateY(-2px)}
+.lts .no{font-family:var(--mono);font-size:12px;color:var(--accent);font-weight:600}
+.lts h3{margin:4px 0 8px;font-size:15px;font-weight:700;line-height:1.35}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:12px;margin:2px 0 10px}
+.kv b{color:var(--muted);font-weight:500}
+.kv span{font-family:var(--mono);text-align:right}
+.lts .foot{display:flex;gap:6px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--line);padding-top:10px;margin-top:2px}
+.empty{border:1px dashed var(--line2);border-radius:var(--r);padding:26px;text-align:center;color:var(--muted)}
+
+/* ---------- modal ---------- */
+.overlay{position:fixed;inset:0;background:rgba(6,11,18,.72);backdrop-filter:blur(4px);z-index:60;
+  display:grid;place-items:center;padding:18px}
+.modal{width:min(860px,96vw);max-height:92vh;overflow:auto;background:var(--panel);border:1px solid var(--line2);
+  border-radius:16px;box-shadow:0 30px 90px rgba(0,0,0,.6)}
+.modal .mh{position:sticky;top:0;background:var(--panel);display:flex;align-items:center;gap:12px;
+  padding:16px 18px;border-bottom:1px solid var(--line);z-index:2}
+.modal .mh h3{margin:0;font-size:17px;flex:1}
+.modal .mb{padding:18px}
+.x{background:none;border:1px solid var(--line2);color:var(--muted);border-radius:8px;width:32px;height:32px;font-size:16px}
+.x:hover{color:#fff;border-color:var(--trip)}
+.detail-tabs{display:flex;gap:4px;margin:-4px 0 16px;border-bottom:1px solid var(--line)}
+.detail-tabs button{background:none;border:none;color:var(--muted);padding:9px 13px;font-weight:600;
+  border-bottom:2px solid transparent}
+.detail-tabs button.on{color:#fff;border-color:var(--accent)}
+.spec{width:100%;border-collapse:collapse;font-size:13px}
+.spec td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+.spec td:first-child{color:var(--muted);width:190px;font-weight:500}
+.spec td:last-child{font-family:var(--mono)}
+.form2{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+.form2 .full{grid-column:1/-1}
+
+/* ---------- uploads ---------- */
+.uplist{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.ucard{background:var(--panel2);border:1px solid var(--line);border-radius:11px;overflow:hidden;cursor:pointer;transition:.15s}
+.ucard:hover{border-color:var(--accent)}
+.uthumb{height:96px;background:#0e1926;display:grid;place-items:center;color:var(--muted);font-size:30px}
+.ucap{padding:8px 10px;font-size:12px;border-top:1px solid var(--line)}
+.ucap .fn{color:var(--muted);font-size:10px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ---------- viewer ---------- */
+#viewer{position:fixed;inset:0;background:rgba(3,7,12,.94);z-index:80;display:flex;flex-direction:column}
+.vtop{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);background:#0b131e}
+.vtop .name{flex:1;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vstage{flex:1;overflow:auto;display:flex;justify-content:center;align-items:flex-start;padding:20px}
+.vstage img{transform-origin:top center;box-shadow:0 10px 40px rgba(0,0,0,.6)}
+#pdfPages canvas{display:block;margin:0 auto 14px;box-shadow:0 8px 30px rgba(0,0,0,.6);background:#fff}
+.zbadge{font-family:var(--mono);font-size:12px;min-width:54px;text-align:center;color:var(--muted)}
+
+/* ---------- rich text ---------- */
+.rtblock{border:1px solid var(--line);border-radius:11px;margin-bottom:12px;overflow:hidden}
+.rttool{display:flex;gap:2px;align-items:center;background:var(--panel2);border-bottom:1px solid var(--line);padding:5px 6px}
+.rttool button{background:none;border:1px solid transparent;color:var(--muted);width:30px;height:28px;border-radius:6px;font-size:13px}
+.rttool button:hover{color:#fff;background:#0e1926}
+.rttool .lbl{flex:1}
+.rttool input{background:#0e1926;border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:4px 8px;font-size:12px;width:100%}
+.rtedit{min-height:90px;padding:11px 13px;font-size:13px;outline:none;background:#0e1926}
+.rtedit:empty::before{content:attr(data-ph);color:var(--muted)}
+.rtread{background:#0e1926;border:1px solid var(--line);border-radius:9px;padding:10px 12px;font-size:13px}
+.rtread h5{margin:0 0 4px;color:var(--accent);font-size:11px;text-transform:uppercase;letter-spacing:.08em}
+
+/* ---------- op log ---------- */
+.oplog{display:flex;flex-direction:column;gap:12px}
+.opitem{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+.opitem .top{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.opitem .top b{font-size:14px}
+.dur{font-family:var(--mono);color:var(--alarm)}
+
+/* ---------- admin ---------- */
+.tbl{width:100%;border-collapse:collapse;font-size:13px;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.tbl th{text-align:left;background:var(--panel2);color:var(--muted);padding:9px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+.tbl td{padding:9px 12px;border-top:1px solid var(--line)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:18px}
+.panel h4{margin:0 0 14px;font-size:15px}
+
+/* ---------- diagram / animation ---------- */
+.simwrap{background:linear-gradient(180deg,#0b1520,#0a121b);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.simbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+.gauges{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;padding:14px}
+.gauge{background:#0e1926;border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.gauge .lab{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.gauge .val{font-family:var(--mono);font-size:22px;font-weight:600;margin-top:3px}
+.gauge .val small{font-size:12px;color:var(--muted)}
+svg .cond{stroke:#40597a;stroke-width:3;fill:none}
+svg .cond.live{stroke:var(--live)}
+svg .cond.hot{stroke:var(--alarm)}
+svg .cond.dead{stroke:#33465c;stroke-dasharray:5 6}
+.flow{fill:var(--accent)}
+.node-lab{fill:var(--muted);font:600 11px var(--ui)}
+.node-val{fill:#cfe;font:600 12px var(--mono)}
+.eq{fill:#12233a;stroke:#3a5578;stroke-width:1.5}
+.bkr{fill:#0e1926;stroke:#5a7a9c}
+.legend{display:flex;gap:16px;flex-wrap:wrap;padding:0 14px 14px;font-size:12px;color:var(--muted)}
+.legend i{display:inline-block;width:22px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}
+
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:#0e1926;border:1px solid var(--line2);
+  color:var(--ink);padding:11px 18px;border-radius:11px;box-shadow:0 12px 40px rgba(0,0,0,.5);z-index:120;font-size:13px;max-width:90vw}
+.toast.err{border-color:var(--trip);color:#ffc9c9}
+.toast.ok{border-color:#2c6b3f}
+.spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;
+  animation:sp .7s linear infinite;display:inline-block}
+@keyframes sp{to{transform:rotate(360deg)}}
+#loader{position:fixed;inset:0;display:grid;place-items:center;z-index:200;background:rgba(6,11,18,.4)}
+@media(max-width:640px){.form2{grid-template-columns:1fr}.spec td:first-child{width:130px}
+  .viewhd h2{font-size:19px}}
+@media(prefers-reduced-motion:reduce){.flow{display:none}}
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div id="login">
+  <div class="card login-box">
+    <div class="brand">
+      <div class="spark"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" fill="#05202a"/></svg></div>
+      <div><h1>LTS Portal</h1><div class="sub">MSETCL · Load Trimming Schemes</div></div>
+    </div>
+    <div class="tabsw">
+      <button id="tabSignin" class="on" onclick="authTab('signin')">Sign in</button>
+      <button id="tabReg" onclick="authTab('register')">Register substation</button>
+    </div>
+
+    <div id="paneSignin">
+      <label class="fld"><span>Username</span><input id="liUser" class="in" autocomplete="username"></label>
+      <label class="fld"><span>Password</span><input id="liPass" class="in" type="password" autocomplete="current-password"></label>
+      <button class="btn primary" style="width:100%;justify-content:center" onclick="doLogin()"><span id="liBtnT">Sign in</span></button>
+      <p class="muted" style="font-size:12px;margin-top:14px">Default admin — <span class="mono">admin / admin@123</span></p>
+    </div>
+
+    <div id="paneReg" class="hidden">
+      <div class="form2">
+        <label class="fld"><span>Editor username</span><input id="rgUser" class="in"></label>
+        <label class="fld"><span>Password</span><input id="rgPass" class="in" type="password"></label>
+        <label class="fld"><span>Substation name</span><input id="rgSubName" class="in" placeholder="e.g. 220kV Baramati"></label>
+        <label class="fld"><span>Substation code</span><input id="rgSubCode" class="in" placeholder="e.g. J123" style="text-transform:uppercase"></label>
+      </div>
+      <button class="btn primary" style="width:100%;justify-content:center" onclick="doRegister()">Submit for approval</button>
+      <p class="muted" style="font-size:12px;margin-top:12px">An admin approves your account &amp; substation before first login.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app" class="hidden">
+  <div class="topbar">
+    <div class="brand" style="margin:0">
+      <div class="spark" style="width:30px;height:30px"><svg width="17" height="17" viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" fill="#05202a"/></svg></div>
+      <div><h1 style="font-size:15px">LTS Portal</h1></div>
+    </div>
+    <div class="subselect">
+      <span class="dot"></span>
+      <select id="subSel" onchange="switchSub(this.value)"></select>
+    </div>
+    <div class="grow"></div>
+    <div class="userchip">
+      <div class="av" id="uAv">?</div>
+      <div><div id="uName" style="font-weight:700"></div><div class="muted" id="uRole" style="font-size:11px"></div></div>
+    </div>
+    <button class="btn ghost sm" onclick="logout()">Sign out</button>
+  </div>
+  <div class="nav" id="nav"></div>
+
+  <div class="wrap">
+    <div id="view-home"></div>
+    <div id="view-ops" class="hidden"></div>
+    <div id="view-sim" class="hidden"></div>
+    <div id="view-admin" class="hidden"></div>
+    <div id="view-account" class="hidden"></div>
+  </div>
+</div>
+
+<div id="modalMount"></div>
+<div id="viewerMount"></div>
+<div id="loader" class="hidden"><span class="spin" style="width:34px;height:34px;border-width:3px"></span></div>
+
+<script>
+/* =============================================================
+   state + api plumbing
+============================================================= */
+var S = { token:null, user:null, subs:[], sub:null, canEdit:false, lists:{own:[],other:[]}, ops:[], tab:'home' };
+var GS = (typeof google!=='undefined' && google.script && google.script.run);
+
+/* google.script.run does not support apply on the top object, but the
+   handler-wrapped runner it returns DOES support bracket-name .apply() */
+function api(fn){
+  var args=[].slice.call(arguments,1);
+  return new Promise(function(res,rej){
+    if(!GS){ rej(new Error('Backend unavailable. Open the app from its Apps Script Web-App URL.')); return; }
+    var runner=google.script.run.withSuccessHandler(res).withFailureHandler(function(e){rej(new Error(e&&e.message?e.message:String(e)));});
+    runner[fn].apply(runner,args);
+  });
+}
+function busy(on){ document.getElementById('loader').classList.toggle('hidden',!on); }
+function toast(msg,type){
+  var t=document.createElement('div'); t.className='toast '+(type||''); t.textContent=msg; document.body.appendChild(t);
+  setTimeout(function(){t.style.opacity='0';t.style.transition='.4s';setTimeout(function(){t.remove();},400);},3200);
+}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+
+/* =============================================================
+   auth
+============================================================= */
+function authTab(w){
+  var s=w==='signin';
+  document.getElementById('tabSignin').classList.toggle('on',s);
+  document.getElementById('tabReg').classList.toggle('on',!s);
+  document.getElementById('paneSignin').classList.toggle('hidden',!s);
+  document.getElementById('paneReg').classList.toggle('hidden',s);
+}
+function doLogin(){
+  var u=val('liUser'),p=val('liPass');
+  if(!u||!p){toast('Enter username and password','err');return;}
+  document.getElementById('liBtnT').innerHTML='<span class="spin"></span>';
+  api('apiLogin',u,p).then(function(r){
+    S.token=r.token; S.user=r.user; boot();
+  }).catch(function(e){ toast(e.message,'err'); document.getElementById('liBtnT').textContent='Sign in'; });
+}
+function doRegister(){
+  var u=val('rgUser'),p=val('rgPass'),n=val('rgSubName'),c=val('rgSubCode');
+  if(!u||!p||!c){toast('Fill username, password and substation code','err');return;}
+  busy(true);
+  api('apiRegister',u,p,n,c).then(function(r){ busy(false); toast(r.message,'ok'); authTab('signin'); })
+    .catch(function(e){ busy(false); toast(e.message,'err'); });
+}
+function logout(){ S={token:null,user:null,subs:[],sub:null,canEdit:false,lists:{own:[],other:[]},ops:[],tab:'home'};
+  document.getElementById('app').classList.add('hidden'); document.getElementById('login').classList.remove('hidden');
+  document.getElementById('liBtnT').textContent='Sign in'; }
+function val(id){return document.getElementById(id).value.trim();}
+
+/* =============================================================
+   boot after login
+============================================================= */
+function boot(){
+  busy(true);
+  api('apiGetContext',S.token).then(function(ctx){
+    busy(false);
+    S.user=ctx.user; S.subs=ctx.substations;
+    document.getElementById('login').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    document.getElementById('uName').textContent=S.user.username;
+    document.getElementById('uRole').textContent=S.user.role.toUpperCase()+(S.user.substationCode&&S.user.substationCode!=='*'?' · '+S.user.substationCode:'');
+    document.getElementById('uAv').textContent=(S.user.username[0]||'?').toUpperCase();
+    buildNav();
+    var sel=document.getElementById('subSel');
+    sel.innerHTML=S.subs.map(function(s){return '<option value="'+esc(s.code)+'">'+esc(s.name)+' ('+esc(s.code)+')</option>';}).join('');
+    if(S.subs.length){ S.sub=S.subs[0].code; sel.value=S.sub; loadSub(); }
+    else { document.getElementById('view-home').innerHTML='<div class="empty">No substation is available to your account yet. Ask an admin to grant access.</div>'; }
+  }).catch(function(e){ busy(false); toast(e.message,'err'); if(/session/i.test(e.message)) logout(); });
+}
+function buildNav(){
+  var tabs=[['home','Load Trimming Schemes'],['ops','Operations Log'],['sim','LTS Diagram'],['account','Account']];
+  if(S.user.role==='admin') tabs.splice(3,0,['admin','Admin']);
+  document.getElementById('nav').innerHTML=tabs.map(function(t){
+    return '<button data-tab="'+t[0]+'" class="'+(t[0]===S.tab?'on':'')+'" onclick="go(\''+t[0]+'\')">'+t[1]+'</button>';}).join('');
+}
+function go(tab){
+  S.tab=tab;
+  ['home','ops','sim','admin','account'].forEach(function(v){
+    document.getElementById('view-'+v).classList.toggle('hidden',v!==tab); });
+  document.querySelectorAll('#nav button').forEach(function(b){b.classList.toggle('on',b.dataset.tab===tab);});
+  if(tab==='ops') renderOps();
+  if(tab==='sim') renderSim();
+  if(tab==='admin') renderAdmin();
+  if(tab==='account') renderAccount();
+}
+function switchSub(code){ S.sub=code; loadSub(); if(S.tab==='ops') renderOps(); if(S.tab==='sim') renderSim(); }
+
+function loadSub(){
+  busy(true);
+  api('apiGetLTSList',S.token,S.sub).then(function(r){
+    busy(false); S.canEdit=r.canEdit; S.lists={own:r.own,other:r.other}; renderHome();
+  }).catch(function(e){ busy(false); toast(e.message,'err'); });
+}
+
+/* =============================================================
+   HOME — LTS lists
+============================================================= */
+function subMeta(){ return S.subs.filter(function(s){return s.code===S.sub;})[0]||{name:S.sub,code:S.sub}; }
+function ltsClass(l){ var t=(l.tfIct||'').toLowerCase(); if(t.indexOf('uv')>=0||t.indexOf('under')>=0) return 'uv'; if(t.indexOf('ckt')>=0||t.indexOf('line')>=0||t.indexOf('girwali')>=0) return 'line'; return ''; }
+
+function renderHome(){
+  var m=subMeta();
+  var h='<div class="viewhd"><div><h2>Load Trimming Schemes</h2>'+
+    '<p>'+esc(m.name)+' · '+esc(m.division||'')+' — '+(S.lists.own.length+S.lists.other.length)+' scheme(s)</p></div>'+
+    '<div class="actions">'+
+      '<button class="btn sm" onclick="exportIt(\'list\',\'xlsx\')">⬇ Excel</button>'+
+      '<button class="btn sm" onclick="exportIt(\'list\',\'pdf\')">⬇ PDF</button>'+
+      (S.canEdit?'<button class="btn primary sm" onclick="editLTS(null,\'own\')">+ Add LTS</button>':'')+
+    '</div></div>';
+
+  h+='<div class="section-t">Own substation end</div>';
+  h+= S.lists.own.length? '<div class="grid">'+S.lists.own.map(ltsCard).join('')+'</div>'
+    : '<div class="empty">No LTS recorded at this substation end.'+(S.canEdit?' <a onclick="editLTS(null,\'own\')">Add one</a>.':'')+'</div>';
+
+  h+='<div class="section-t">Other substation end</div>';
+  h+= S.lists.other.length? '<div class="grid">'+S.lists.other.map(ltsCard).join('')+'</div>'
+    : '<div class="empty">No LTS at the other substation end.'+(S.canEdit?' <a onclick="editLTS(null,\'other\')">Add one</a>.':'')+'</div>';
+
+  document.getElementById('view-home').innerHTML=h;
+}
+function ltsCard(l){
+  var vis=String(l.visibleToViewer).toLowerCase()==='yes';
+  return '<div class="lts '+ltsClass(l)+'">'+
+    '<div class="no">LTS '+esc(l.srNo)+' · '+(l.endType==='other'?'<span class="pill other">OTHER END</span>':'<span class="pill off">OWN END</span>')+'</div>'+
+    '<h3>'+esc(l.tfIct)+'</h3>'+
+    '<div class="kv">'+
+      '<b>Relay</b><span>'+esc(shorten(l.relayType,26))+'</span>'+
+      '<b>CTR</b><span>'+esc(l.ctr)+'</span>'+
+      '<b>Stage-1</b><span>'+esc(shorten(l.stage1,26))+'</span>'+
+      '<b>Load relief</b><span>'+esc(shorten(l.loadRelief,26))+'</span>'+
+    '</div>'+
+    '<div class="foot">'+
+      '<span class="pill '+(String(l.healthiness).toLowerCase()==='yes'?'ok':'warn')+'">'+(String(l.healthiness).toLowerCase()==='yes'?'Healthy':esc(l.healthiness||'?'))+'</span>'+
+      '<span class="pill '+(l.status==='Approved'?'ok':'off')+'">'+esc(l.status||'—')+'</span>'+
+      '<div style="flex:1"></div>'+
+      '<button class="btn sm" onclick="openLTS(\''+l.id+'\')">Open</button>'+
+      (S.canEdit?'<button class="btn sm ghost" title="'+(vis?'Visible to viewers':'Hidden from viewers')+'" onclick="toggleVis(\''+l.id+'\','+(!vis)+')">'+(vis?'👁':'🚫')+'</button>':'')+
+    '</div></div>';
+}
+function shorten(s,n){s=String(s||'');return s.length>n?s.slice(0,n-1)+'…':s;}
+
+function toggleVis(id,to){
+  api('apiToggleVisible',S.token,S.sub,id,to).then(function(){ toast(to?'LTS is now visible to viewers':'LTS hidden from viewers','ok'); loadSub(); })
+    .catch(function(e){toast(e.message,'err');});
+}
+
+/* =============================================================
+   LTS EDIT form
+============================================================= */
+var LF=[['srNo','Sr No','num'],['date','Date / proposed','txt'],['tfIct','ICT / Line / Scheme name','full'],
+ ['hvLv','LTS on HV / LV side','txt'],['ctr','Connected CTR','txt'],['relayType','Type of relay','txt'],
+ ['maxLoad','Max load recorded','txt'],['alarmPsm','Alarm (PSM) setting','txt'],
+ ['stage1','Stage-1 (Trip) setting','txt'],['stage2','Stage-2 (Trip) setting','txt'],
+ ['feeders','Feeders involved in scheme','area'],['loadRelief','Load relief (obtained / required)','txt'],
+ ['remarks','Remarks / purpose of LTS','area'],['status','Approval status','txt'],
+ ['healthiness','Healthiness (Yes/No)','txt'],['lastOpDate','Last operating date','txt']];
+
+function editLTS(existing,endType){
+  var l=existing||{endType:endType||'own',status:'Approved',healthiness:'Yes',visibleToViewer:'yes'};
+  var fields=LF.map(function(f){
+    var full=(f[2]==='full'||f[2]==='area');
+    var input=f[2]==='area'
+      ? '<textarea class="in" rows="3" id="f_'+f[0]+'">'+esc(l[f[0]]||'')+'</textarea>'
+      : '<input class="in" id="f_'+f[0]+'" '+(f[2]==='num'?'type="number"':'')+' value="'+esc(l[f[0]]||'')+'">';
+    return '<label class="fld'+(full?' full':'')+'"><span>'+f[1]+'</span>'+input+'</label>';
+  }).join('');
+  var body='<div class="form2">'+
+    '<label class="fld full"><span>Scheme end</span><select class="in" id="f_endType">'+
+      '<option value="own"'+(l.endType!=='other'?' selected':'')+'>Own substation end</option>'+
+      '<option value="other"'+(l.endType==='other'?' selected':'')+'>Other substation end</option></select></label>'+
+    fields+
+    '<label class="fld full"><span>Visible to viewers</span><select class="in" id="f_visibleToViewer">'+
+      '<option value="yes"'+(String(l.visibleToViewer).toLowerCase()!=='no'?' selected':'')+'>Yes — viewers can see this LTS</option>'+
+      '<option value="no"'+(String(l.visibleToViewer).toLowerCase()==='no'?' selected':'')+'>No — hidden from viewers</option></select></label>'+
+    '</div>';
+  openModal((existing?'Edit LTS':'Add LTS'),body,
+    '<button class="btn ghost" onclick="closeModal()">Cancel</button>'+
+    '<button class="btn primary" onclick="saveLTS(\''+(existing?existing.id:'')+'\')">Save LTS</button>');
+}
+function saveLTS(id){
+  var o={endType:document.getElementById('f_endType').value,visibleToViewer:document.getElementById('f_visibleToViewer').value,
+    division:subMeta().division||'',substation:subMeta().name};
+  LF.forEach(function(f){o[f[0]]=document.getElementById('f_'+f[0]).value;});
+  if(id)o.id=id;
+  if(!o.tfIct){toast('Enter the ICT / line / scheme name','err');return;}
+  busy(true);
+  api('apiSaveLTS',S.token,S.sub,o).then(function(){ busy(false); closeModal(); toast('LTS saved','ok'); loadSub(); })
+    .catch(function(e){busy(false);toast(e.message,'err');});
+}
+
+/* =============================================================
+   LTS DETAIL
+============================================================= */
+var CUR=null; // current detail {lts,customFields,uploads,canEdit}
+function openLTS(id){
+  busy(true);
+  api('apiGetLTS',S.token,S.sub,id).then(function(d){ busy(false); CUR=d; showDetail(); })
+    .catch(function(e){busy(false);toast(e.message,'err');});
+}
+function showDetail(){
+  var l=CUR.lts;
+  var spec=[['Sr No',l.srNo],['Scheme end',l.endType==='other'?'Other substation end':'Own substation end'],
+    ['Division',l.division],['Substation',l.substation],['Status',l.status],['Date',l.date],
+    ['ICT / Line',l.tfIct],['HV / LV',l.hvLv],['Connected CTR',l.ctr],['Type of relay',l.relayType],
+    ['Max load recorded',l.maxLoad],['Alarm (PSM) setting',l.alarmPsm],['Stage-1 (Trip)',l.stage1],
+    ['Stage-2 (Trip)',l.stage2],['Feeders in scheme',l.feeders],['Load relief',l.loadRelief],
+    ['Remarks / purpose',l.remarks],['Healthiness',l.healthiness],['Last operating date',l.lastOpDate]];
+  var specHtml=spec.map(function(p){return '<tr><td>'+esc(p[0])+'</td><td>'+esc(p[1]||'—')+'</td></tr>';}).join('');
+  var cf=CUR.customFields.map(function(c){
+    return '<tr><td>'+esc(c.fieldName)+'</td><td>'+esc(c.fieldValue)+
+      (CUR.canEdit?' <button class="btn sm danger" style="float:right" onclick="delCF(\''+c.id+'\')">✕</button>':'')+'</td></tr>';}).join('');
+
+  var body=
+    '<div class="detail-tabs">'+
+      '<button class="on" onclick="dtab(this,\'d-spec\')">Specifications</button>'+
+      '<button onclick="dtab(this,\'d-docs\')">Documents ('+CUR.uploads.length+')</button>'+
+    '</div>'+
+    '<div id="d-spec">'+
+      '<table class="spec">'+specHtml+cf+'</table>'+
+      (CUR.canEdit?'<div class="panel" style="margin-top:16px"><h4>Add a custom field (this LTS only)</h4>'+
+        '<div class="form2"><label class="fld"><span>Field name</span><input class="in" id="cfName" placeholder="e.g. PLCC channel no."></label>'+
+        '<label class="fld"><span>Field value</span><input class="in" id="cfVal"></label></div>'+
+        '<button class="btn" onclick="addCF()">+ Add field</button></div>':'')+
+    '</div>'+
+    '<div id="d-docs" class="hidden">'+
+      (CUR.canEdit?'<div style="margin-bottom:14px"><input type="file" id="upFile" accept="image/*,application/pdf" class="hidden" onchange="pickUpload(this)">'+
+        '<button class="btn primary" onclick="document.getElementById(\'upFile\').click()">＋ Add Image / PDF</button>'+
+        '<span class="muted" id="upName" style="margin-left:10px;font-size:12px"></span></div>':'')+
+      (CUR.uploads.length?'<div class="uplist">'+CUR.uploads.map(uCard).join('')+'</div>':'<div class="empty">No approvals or documents uploaded.</div>')+
+    '</div>';
+
+  var foot='<button class="btn sm" onclick="exportIt(\'single\',\'xlsx\',\''+l.id+'\')">⬇ Excel</button>'+
+    '<button class="btn sm" onclick="exportIt(\'single\',\'pdf\',\''+l.id+'\')">⬇ PDF</button>'+
+    '<div style="flex:1"></div>'+
+    (CUR.canEdit?'<button class="btn danger" onclick="delLTS(\''+l.id+'\')">Delete</button>'+
+      '<button class="btn" onclick="editLTS(CUR.lts,CUR.lts.endType)">Edit</button>':'')+
+    '<button class="btn ghost" onclick="closeModal()">Close</button>';
+  openModal('LTS '+esc(l.srNo)+' — '+esc(shorten(l.tfIct,44)),body,foot);
+}
+function dtab(btn,id){
+  btn.parentNode.querySelectorAll('button').forEach(function(b){b.classList.remove('on');}); btn.classList.add('on');
+  ['d-spec','d-docs'].forEach(function(x){document.getElementById(x).classList.toggle('hidden',x!==id);});
+}
+function uCard(u){
+  var isPdf=/pdf/i.test(u.mimeType);
+  return '<div class="ucard" onclick="viewFile(\''+u.driveFileId+'\',\''+esc(u.mimeType)+'\',\''+esc(u.fileName).replace(/'/g,"\\'")+'\')">'+
+    '<div class="uthumb">'+(isPdf?'📄':'🖼')+'</div>'+
+    '<div class="ucap">'+esc(u.caption)+'<div class="fn">'+esc(u.fileName)+
+      (CUR.canEdit?' · <a onclick="event.stopPropagation();delUpload(\''+u.id+'\')" style="color:#ff9c9c">delete</a>':'')+'</div></div></div>';
+}
+function addCF(){
+  var n=val('cfName'),v=document.getElementById('cfVal').value.trim();
+  if(!n){toast('Field name required','err');return;}
+  api('apiAddCustomField',S.token,S.sub,CUR.lts.id,n,v).then(function(){ openLTS(CUR.lts.id); toast('Field added','ok'); })
+    .catch(function(e){toast(e.message,'err');});
+}
+function delCF(id){ api('apiDeleteCustomField',S.token,S.sub,id).then(function(){openLTS(CUR.lts.id);}).catch(function(e){toast(e.message,'err');}); }
+function delLTS(id){ if(!confirm('Delete this LTS and all its documents?'))return;
+  api('apiDeleteLTS',S.token,S.sub,id).then(function(){closeModal();toast('LTS deleted','ok');loadSub();}).catch(function(e){toast(e.message,'err');}); }
+
+/* uploads */
+function pickUpload(inp){
+  var f=inp.files[0]; if(!f)return;
+  if(f.size>18*1024*1024){toast('File too large (max ~18 MB)','err');return;}
+  var caption=prompt('Caption for this document:',f.name); if(caption===null)return;
+  document.getElementById('upName').textContent='Uploading '+f.name+' …';
+  var rd=new FileReader();
+  rd.onload=function(){
+    var b64=rd.result.split(',')[1];
+    api('apiUploadFile',S.token,S.sub,CUR.lts.id,b64,f.name,f.type||'application/octet-stream',caption)
+      .then(function(){ toast('Uploaded','ok'); openLTS(CUR.lts.id); })
+      .catch(function(e){toast(e.message,'err');document.getElementById('upName').textContent='';});
+  };
+  rd.readAsDataURL(f); inp.value='';
+}
+function delUpload(id){ if(!confirm('Delete this document?'))return;
+  api('apiDeleteUpload',S.token,S.sub,id).then(function(){openLTS(CUR.lts.id);toast('Deleted','ok');}).catch(function(e){toast(e.message,'err');}); }
+
+/* =============================================================
+   FILE VIEWER (Drive-style)
+============================================================= */
+var VZ={scale:1,pages:1,page:1,pdf:null};
+function viewFile(fileId,mime,name){
+  busy(true);
+  api('apiGetFile',S.token,fileId).then(function(f){
+    busy(false); openViewer(f,mime,name);
+  }).catch(function(e){busy(false);toast(e.message,'err');});
+}
+function openViewer(f,mime,name){
+  VZ={scale:1,pages:1,page:1,pdf:null};
+  var dataUrl='data:'+mime+';base64,'+f.base64;
+  var isPdf=/pdf/i.test(mime);
+  var html='<div id="viewer"><div class="vtop">'+
+    '<button class="x" onclick="closeViewer()">✕</button>'+
+    '<span class="name">'+esc(name)+'</span>'+
+    (isPdf?'<button class="btn sm" onclick="pdfPage(-1)">‹</button><span class="zbadge" id="pgBadge">1 / 1</span><button class="btn sm" onclick="pdfPage(1)">›</button>':'')+
+    '<button class="btn sm" onclick="zoom(-1)">−</button><span class="zbadge" id="zBadge">100%</span><button class="btn sm" onclick="zoom(1)">＋</button>'+
+    '<a class="btn sm primary" href="'+dataUrl+'" download="'+esc(name)+'">⬇ Download</a>'+
+    '</div><div class="vstage" id="vstage">'+
+      (isPdf?'<div id="pdfPages"></div>':'<img id="vimg" src="'+dataUrl+'">')+
+    '</div></div>';
+  document.getElementById('viewerMount').innerHTML=html;
+  if(isPdf) loadPdf(dataUrl);
+}
+function closeViewer(){ document.getElementById('viewerMount').innerHTML=''; }
+function zoom(dir){
+  VZ.scale=Math.min(4,Math.max(.4,VZ.scale+dir*0.2));
+  document.getElementById('zBadge').textContent=Math.round(VZ.scale*100)+'%';
+  var img=document.getElementById('vimg'); if(img){img.style.transform='scale('+VZ.scale+')';}
+  if(VZ.pdf) renderPdfPage();
+}
+function loadPdf(dataUrl){
+  if(!window.pdfjsLib){ document.getElementById('pdfPages').innerHTML='<p class="muted" style="color:#fff">PDF viewer failed to load. Use Download.</p>'; return; }
+  pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  var raw=atob(dataUrl.split(',')[1]); var arr=new Uint8Array(raw.length);
+  for(var i=0;i<raw.length;i++)arr[i]=raw.charCodeAt(i);
+  pdfjsLib.getDocument({data:arr}).promise.then(function(pdf){
+    VZ.pdf=pdf; VZ.pages=pdf.numPages; VZ.page=1; renderPdfPage();
+  }).catch(function(){ document.getElementById('pdfPages').innerHTML='<p style="color:#fff">Could not render PDF. Use Download.</p>'; });
+}
+function pdfPage(d){ if(!VZ.pdf)return; VZ.page=Math.min(VZ.pages,Math.max(1,VZ.page+d)); renderPdfPage(); }
+function renderPdfPage(){
+  VZ.pdf.getPage(VZ.page).then(function(page){
+    var vp=page.getViewport({scale:1.4*VZ.scale});
+    var cv=document.createElement('canvas'); cv.width=vp.width; cv.height=vp.height;
+    page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise.then(function(){
+      var box=document.getElementById('pdfPages'); box.innerHTML=''; box.appendChild(cv);
+      document.getElementById('pgBadge').textContent=VZ.page+' / '+VZ.pages;
+    });
+  });
+}
+
+/* =============================================================
+   OPERATIONS LOG
+============================================================= */
+function renderOps(){
+  var v=document.getElementById('view-ops');
+  v.innerHTML='<div class="viewhd"><div><h2>Operations Log</h2><p>Recorded LTS operations at '+esc(subMeta().name)+'</p></div>'+
+    '<div class="actions"><button class="btn sm" onclick="exportIt(\'ops\',\'xlsx\')">⬇ Excel</button>'+
+    '<button class="btn sm" onclick="exportIt(\'ops\',\'pdf\')">⬇ PDF</button>'+
+    (S.canEdit?'<button class="btn primary sm" onclick="opForm()">+ Record operation</button>':'')+'</div></div>'+
+    '<div id="opList" class="oplog"><div class="empty">Loading…</div></div>';
+  api('apiGetOperations',S.token,S.sub).then(function(ops){ S.ops=ops; paintOps(); }).catch(function(e){toast(e.message,'err');});
+}
+function paintOps(){
+  var box=document.getElementById('opList'); if(!box)return;
+  if(!S.ops.length){box.innerHTML='<div class="empty">No operations recorded yet.</div>';return;}
+  box.innerHTML=S.ops.map(function(o){
+    var blocks=(o.blocks||[]).map(function(b){return '<div class="rtread">'+(b.label?'<h5>'+esc(b.label)+'</h5>':'')+ (b.html||'') +'</div>';}).join('');
+    return '<div class="opitem"><div class="top">'+
+      '<b>'+esc(o.opTitle||'Operation')+'</b>'+
+      '<span class="pill other">'+esc(shorten(o.ltsName,40))+'</span>'+
+      '<div style="flex:1"></div>'+
+      '<span class="muted mono" style="font-size:12px">'+esc(fmtLocal(o.interruptFrom))+' → '+esc(fmtLocal(o.interruptTo))+'</span>'+
+      '<span class="dur">'+durLabel(o.durationMin)+'</span>'+
+      (S.canEdit?'<button class="btn sm ghost" onclick="opForm('+"'"+o.id+"'"+')">edit</button>'+
+        '<button class="btn sm danger" onclick="delOp(\''+o.id+'\')">✕</button>':'')+
+      '</div><div style="display:grid;gap:8px;margin-top:10px">'+blocks+'</div>'+
+      '<div class="muted" style="font-size:11px;margin-top:8px">Logged by '+esc(o.createdBy||'—')+'</div></div>';
+  }).join('');
+}
+function durLabel(m){ m=Number(m)||0; var h=Math.floor(m/60),mm=m%60; return (h?h+' h ':'')+mm+' min'; }
+function fmtLocal(iso){ if(!iso)return '—'; var d=new Date(iso); if(isNaN(d))return iso;
+  return d.toLocaleString([], {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
+
+var OPBLOCKS=[];
+function opForm(id){
+  var op=id?S.ops.filter(function(o){return o.id===id;})[0]:null;
+  OPBLOCKS = op&&op.blocks&&op.blocks.length ? JSON.parse(JSON.stringify(op.blocks)) : [{label:'',html:''}];
+  var opts=S.lists.own.concat(S.lists.other).map(function(l){
+    return '<option value="'+l.id+'"'+(op&&op.ltsId===l.id?' selected':'')+'>LTS '+esc(l.srNo)+' — '+esc(shorten(l.tfIct,44))+'</option>';}).join('');
+  var body='<div class="form2">'+
+    '<label class="fld full"><span>Select LTS</span><select class="in" id="opLts">'+opts+'</select></label>'+
+    '<label class="fld full"><span>Operation title</span><input class="in" id="opTitle" value="'+esc(op?op.opTitle:'')+'" placeholder="e.g. ICT-1 trip — Stage-1 LTS operated"></label>'+
+    '<label class="fld"><span>Interruption from</span><input class="in" type="datetime-local" id="opFrom" value="'+esc(toLocalInput(op?op.interruptFrom:''))+'" oninput="calcDur()"></label>'+
+    '<label class="fld"><span>Interruption to</span><input class="in" type="datetime-local" id="opTo" value="'+esc(toLocalInput(op?op.interruptTo:''))+'" oninput="calcDur()"></label>'+
+    '<label class="fld full"><span>Duration (auto)</span><input class="in mono" id="opDur" readonly value="'+durLabel(op?op.durationMin:0)+'"></label>'+
+    '</div>'+
+    '<div id="rtBlocks"></div>'+
+    '<button class="btn" onclick="addBlock()">＋ Add further details</button>';
+  openModal(id?'Edit operation':'Record LTS operation',body,
+    '<button class="btn ghost" onclick="closeModal()">Cancel</button>'+
+    '<button class="btn primary" onclick="saveOp(\''+(id||'')+'\')">Save operation</button>');
+  paintBlocks();
+}
+function paintBlocks(){
+  var box=document.getElementById('rtBlocks');
+  box.innerHTML=OPBLOCKS.map(function(b,i){
+    var ph=i===0?'Enter operation details…':'Additional details…';
+    return '<div class="rtblock">'+
+      '<div class="rttool">'+
+        '<button title="Bold" onmousedown="return rt(event,\'bold\')"><b>B</b></button>'+
+        '<button title="Italic" onmousedown="return rt(event,\'italic\')"><i>I</i></button>'+
+        '<button title="Underline" onmousedown="return rt(event,\'underline\')"><u>U</u></button>'+
+        '<button title="Bulleted list" onmousedown="return rt(event,\'insertUnorderedList\')">•</button>'+
+        '<div class="lbl"><input placeholder="Section label (optional)" value="'+esc(b.label||'')+'" oninput="OPBLOCKS['+i+'].label=this.value"></div>'+
+        (i>0?'<button title="Remove section" onmousedown="return rmBlock(event,'+i+')" style="color:#ff9c9c">✕</button>':'')+
+      '</div>'+
+      '<div class="rtedit" contenteditable="true" data-ph="'+ph+'" data-i="'+i+'" oninput="OPBLOCKS['+i+'].html=this.innerHTML">'+(b.html||'')+'</div>'+
+    '</div>';
+  }).join('');
+}
+function rt(ev,cmd){ ev.preventDefault(); document.execCommand(cmd,false,null); return false; }
+function addBlock(){ OPBLOCKS.push({label:'',html:''}); paintBlocks(); }
+function rmBlock(ev,i){ ev.preventDefault(); OPBLOCKS.splice(i,1); paintBlocks(); return false; }
+function toLocalInput(iso){ if(!iso)return ''; var d=new Date(iso); if(isNaN(d))return '';
+  var p=function(n){return('0'+n).slice(-2);};
+  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+p(d.getHours())+':'+p(d.getMinutes()); }
+function calcDur(){
+  var a=document.getElementById('opFrom').value,b=document.getElementById('opTo').value;
+  if(a&&b){ var m=Math.round((new Date(b)-new Date(a))/60000); document.getElementById('opDur').value = m>=0?durLabel(m):'end is before start'; }
+}
+function saveOp(id){
+  var from=document.getElementById('opFrom').value, to=document.getElementById('opTo').value;
+  var dur = (from&&to)? Math.max(0,Math.round((new Date(to)-new Date(from))/60000)) : 0;
+  var op={ id:id||undefined, ltsId:document.getElementById('opLts').value, opTitle:val('opTitle'),
+    interruptFrom: from?new Date(from).toISOString():'', interruptTo: to?new Date(to).toISOString():'',
+    durationMin:dur, blocks:OPBLOCKS };
+  if(!op.ltsId){toast('Select an LTS','err');return;}
+  busy(true);
+  api('apiSaveOperation',S.token,S.sub,op).then(function(){busy(false);closeModal();toast('Operation saved','ok');renderOps();})
+    .catch(function(e){busy(false);toast(e.message,'err');});
+}
+function delOp(id){ if(!confirm('Delete this operation record?'))return;
+  api('apiDeleteOperation',S.token,S.sub,id).then(function(){toast('Deleted','ok');renderOps();}).catch(function(e){toast(e.message,'err');}); }
+
+/* =============================================================
+   EXPORT
+============================================================= */
+function exportIt(scope,fmt,id){
+  busy(true);
+  api('apiExport',S.token,S.sub,fmt,scope,id||'').then(function(r){
+    busy(false);
+    var a=document.createElement('a');
+    a.href='data:'+r.mimeType+';base64,'+r.base64; a.download=r.fileName; document.body.appendChild(a); a.click(); a.remove();
+    toast('Downloaded '+r.fileName,'ok');
+  }).catch(function(e){busy(false);toast(e.message,'err');});
+}
+
+/* =============================================================
+   ADMIN
+============================================================= */
+function renderAdmin(){
+  var v=document.getElementById('view-admin');
+  v.innerHTML='<div class="viewhd"><div><h2>Admin</h2><p>Approvals, substations &amp; users</p></div></div><div id="adminBody"><div class="empty">Loading…</div></div>';
+  api('apiAdminData',S.token).then(paintAdmin).catch(function(e){toast(e.message,'err');});
+}
+function paintAdmin(d){
+  var pu=d.pendingUsers.length?d.pendingUsers.map(function(u){
+    return '<tr><td>'+esc(u.username)+'</td><td>'+esc(u.role)+'</td><td class="mono">'+esc(u.substationCode)+'</td>'+
+      '<td><button class="btn sm primary" onclick="approveUser(\''+esc(u.username)+'\')">Approve</button> '+
+      '<button class="btn sm danger" onclick="rejectUser(\''+esc(u.username)+'\')">Reject</button></td></tr>';}).join('')
+    :'<tr><td colspan="4" class="muted">No pending accounts.</td></tr>';
+  var ps=d.pendingSubs.length?d.pendingSubs.map(function(s){
+    return '<tr><td class="mono">'+esc(s.code)+'</td><td>'+esc(s.name)+'</td><td>'+esc(s.createdBy)+'</td>'+
+      '<td><button class="btn sm primary" onclick="approveSub(\''+esc(s.code)+'\')">Approve</button></td></tr>';}).join('')
+    :'<tr><td colspan="4" class="muted">No pending substations.</td></tr>';
+  var subs=d.substations.map(function(s){return '<tr><td class="mono">'+esc(s.code)+'</td><td>'+esc(s.name)+'</td><td>'+esc(s.division||'—')+'</td><td>'+esc(s.status)+'</td></tr>';}).join('');
+  var users=d.users.map(function(u){return '<tr><td>'+esc(u.username)+'</td><td>'+esc(u.role)+'</td><td class="mono">'+esc(u.substationCode)+'</td><td>'+esc(u.status)+'</td></tr>';}).join('');
+
+  document.getElementById('adminBody').innerHTML=
+    '<div class="panel"><h4>Pending account approvals</h4><table class="tbl"><tr><th>Username</th><th>Role</th><th>Substation</th><th></th></tr>'+pu+'</table></div>'+
+    '<div class="panel"><h4>Pending substation approvals</h4><table class="tbl"><tr><th>Code</th><th>Name</th><th>Requested by</th><th></th></tr>'+ps+'</table></div>'+
+    '<div class="panel"><h4>Create a substation</h4><div class="form2">'+
+      '<label class="fld"><span>Name</span><input class="in" id="csName"></label>'+
+      '<label class="fld"><span>Code</span><input class="in" id="csCode" style="text-transform:uppercase"></label>'+
+      '<label class="fld full"><span>Division</span><input class="in" id="csDiv"></label>'+
+      '<label class="fld"><span>Editor username (optional)</span><input class="in" id="csEu"></label>'+
+      '<label class="fld"><span>Editor password</span><input class="in" id="csEp" type="password"></label>'+
+    '</div><button class="btn primary" onclick="createSub()">Create substation</button></div>'+
+    '<div class="panel"><h4>All substations</h4><table class="tbl"><tr><th>Code</th><th>Name</th><th>Division</th><th>Status</th></tr>'+subs+'</table></div>'+
+    '<div class="panel"><h4>All users</h4><table class="tbl"><tr><th>User</th><th>Role</th><th>Substation</th><th>Status</th></tr>'+users+'</table></div>';
+}
+function approveUser(u){api('apiApproveUser',S.token,u).then(paintAdmin).then(function(){toast('Approved','ok');}).catch(function(e){toast(e.message,'err');});}
+function rejectUser(u){if(!confirm('Reject '+u+'?'))return;api('apiRejectUser',S.token,u).then(paintAdmin).catch(function(e){toast(e.message,'err');});}
+function approveSub(c){api('apiApproveSubstation',S.token,c).then(paintAdmin).then(function(){toast('Substation approved','ok');}).catch(function(e){toast(e.message,'err');});}
+function createSub(){
+  var n=val('csName'),c=val('csCode'),d=val('csDiv'),eu=val('csEu'),ep=document.getElementById('csEp').value;
+  if(!n||!c){toast('Name and code required','err');return;}
+  busy(true);
+  api('apiCreateSubstation',S.token,n,c,d,eu,ep).then(function(x){busy(false);toast('Substation created','ok');paintAdmin(x);boot();})
+    .catch(function(e){busy(false);toast(e.message,'err');});
+}
+
+/* =============================================================
+   ACCOUNT
+============================================================= */
+function renderAccount(){
+  var v=document.getElementById('view-account');
+  var manage = (S.user.role==='admin'||S.user.role==='editor');
+  v.innerHTML='<div class="viewhd"><div><h2>Account</h2><p>'+esc(S.user.username)+' · '+esc(S.user.role)+'</p></div></div>'+
+    '<div class="panel"><h4>Change password</h4><div class="form2">'+
+      '<label class="fld"><span>Current password</span><input class="in" id="pwOld" type="password"></label>'+
+      '<label class="fld"><span>New password</span><input class="in" id="pwNew" type="password"></label>'+
+    '</div><button class="btn primary" onclick="changePw()">Update password</button></div>'+
+    (manage?
+      '<div class="panel"><h4>Add a viewer login for '+esc(S.sub)+'</h4><div class="form2">'+
+        '<label class="fld"><span>Viewer username</span><input class="in" id="vwU"></label>'+
+        '<label class="fld"><span>Password</span><input class="in" id="vwP" type="password"></label>'+
+      '</div><button class="btn" onclick="addViewer()">Create viewer</button></div>'+
+      '<div class="panel"><h4>Share '+esc(S.sub)+' (read) with a registered user</h4>'+
+        '<label class="fld"><span>Username</span><input class="in" id="shU" placeholder="existing username"></label>'+
+        '<button class="btn" onclick="shareSub()">Grant read access</button></div>'
+     :'');
+}
+function changePw(){
+  var o=document.getElementById('pwOld').value,n=document.getElementById('pwNew').value;
+  if(!o||!n){toast('Fill both fields','err');return;}
+  api('apiChangePassword',S.token,o,n).then(function(){toast('Password updated','ok');document.getElementById('pwOld').value='';document.getElementById('pwNew').value='';})
+    .catch(function(e){toast(e.message,'err');});
+}
+function addViewer(){
+  var u=val('vwU'),p=document.getElementById('vwP').value;
+  if(!u||!p){toast('Fill username and password','err');return;}
+  api('apiCreateViewer',S.token,S.sub,u,p).then(function(){toast('Viewer created','ok');document.getElementById('vwU').value='';document.getElementById('vwP').value='';})
+    .catch(function(e){toast(e.message,'err');});
+}
+function shareSub(){
+  var u=val('shU'); if(!u){toast('Enter a username','err');return;}
+  api('apiShareSubstation',S.token,S.sub,u).then(function(){toast('Access granted','ok');document.getElementById('shU').value='';})
+    .catch(function(e){toast(e.message,'err');});
+}
+
+/* =============================================================
+   MODAL
+============================================================= */
+function openModal(title,body,foot){
+  document.getElementById('modalMount').innerHTML=
+    '<div class="overlay" onclick="if(event.target===this)closeModal()"><div class="modal">'+
+    '<div class="mh"><h3>'+esc(title)+'</h3><button class="x" onclick="closeModal()">✕</button></div>'+
+    '<div class="mb">'+body+'</div>'+
+    (foot?'<div class="mh" style="border-top:1px solid var(--line);border-bottom:none;top:auto;position:sticky;bottom:0;gap:8px">'+foot+'</div>':'')+
+    '</div></div>';
+}
+function closeModal(){ document.getElementById('modalMount').innerHTML=''; }
+
+/* =============================================================
+   LTS DIAGRAM / ANIMATION  (signature element)
+============================================================= */
+var SIM={raf:null,dots:[],mode:'normal',relief:0,ictA:405,ictMW:270,psm:48,t:0};
+function renderSim(){
+  var v=document.getElementById('view-sim');
+  v.innerHTML=
+   '<div class="viewhd"><div><h2>LTS Single-Line Diagram</h2><p>Live visualisation of the Karjat load-trimming logic — ICT overload, relay pick-up, PLCC command &amp; 33 kV feeder shedding</p></div></div>'+
+   '<div class="simwrap">'+
+     '<div class="simbar">'+
+       '<button class="btn sm" onclick="simMode(\'ict\')">⚡ ICT trip (N-1) — LTS-1</button>'+
+       '<button class="btn sm" onclick="simMode(\'line\')">⚡ 400kV line trip — LTS-2</button>'+
+       '<button class="btn sm" onclick="simMode(\'uv\')">▼ Under-voltage — LTS-3</button>'+
+       '<button class="btn sm ghost" onclick="simMode(\'normal\')">↺ Reset to normal</button>'+
+       '<div style="flex:1"></div><span class="pill" id="simState">NORMAL</span>'+
+     '</div>'+
+     svgDiagram()+
+     '<div class="legend">'+
+       '<span><i style="background:var(--live)"></i>Energised</span>'+
+       '<span><i style="background:var(--alarm)"></i>Overloaded / picked-up</span>'+
+       '<span><i style="background:#33465c"></i>Tripped / shed</span>'+
+     '</div>'+
+     '<div class="gauges">'+
+       gauge('ICT loading','ictLoad','405','A')+
+       gauge('ICT power','ictPow','270','MW')+
+       gauge('Relay PSM','psm','48','%')+
+       gauge('Load relief','relief','0','MW')+
+     '</div>'+
+   '</div>';
+  startSim();
+}
+function gauge(lab,id,val,unit){ return '<div class="gauge"><div class="lab">'+lab+'</div><div class="val"><span id="g_'+id+'">'+val+'</span> <small>'+unit+'</small></div></div>'; }
+
+function svgDiagram(){
+  /* geometry: 400kV source -> ICT -> 220/33 bus -> PLCC -> 4 remote 33kV feeders */
+  return '<svg id="sld" viewBox="0 0 1000 430" style="width:100%;height:auto;display:block">'+
+    /* 400kV source */
+    '<line class="cond c-src" x1="60" y1="90" x2="60" y2="150"/>'+
+    '<text class="node-lab" x="40" y="80">400 kV GRID</text>'+
+    '<circle cx="60" cy="70" r="16" class="eq"/>'+
+    /* to ICT */
+    '<line class="cond c-src" x1="60" y1="150" x2="180" y2="150"/>'+
+    /* ICT transformer */
+    '<circle cx="205" cy="135" r="20" class="eq"/><circle cx="205" cy="165" r="20" class="eq"/>'+
+    '<text class="node-lab" x="240" y="140">400/220/33 kV</text>'+
+    '<text class="node-lab" x="240" y="156">ICT-1 &amp; 2 · 501 MVA</text>'+
+    '<text class="node-val" x="240" y="176" id="lbl_ict">405 A</text>'+
+    /* ICT to bus */
+    '<line class="cond c-ict" x1="205" y1="185" x2="205" y2="245"/>'+
+    /* 220/33 bus */
+    '<line class="cond c-bus" x1="120" y1="245" x2="620" y2="245" style="stroke-width:6"/>'+
+    '<text class="node-lab" x="120" y="235">220 / 33 kV BUS · KARJAT</text>'+
+    /* relay box */
+    '<rect x="150" y="285" width="150" height="46" rx="8" class="eq"/>'+
+    '<text class="node-lab" x="165" y="305">NR PCS9611S</text>'+
+    '<text class="node-val" x="165" y="322" id="lbl_relay">MONITOR</text>'+
+    '<line class="cond c-ict" x1="225" y1="245" x2="225" y2="285"/>'+
+    /* PLCC link */
+    '<line class="cond c-plcc" x1="620" y1="245" x2="720" y2="245" stroke-dasharray="3 5"/>'+
+    '<rect x="640" y="215" width="70" height="30" rx="6" class="eq"/>'+
+    '<text class="node-lab" x="648" y="234">PLCC</text>'+
+    '<text class="node-lab" x="726" y="240">command link</text>'+
+    /* remote feeders */
+    remoteFeeder(0,'220kV Jeur','f1')+
+    remoteFeeder(1,'132kV Karmala','f2')+
+    remoteFeeder(2,'220kV Baramati','f3')+
+    remoteFeeder(3,'132kV Parewadi','f4')+
+    '<g id="flowLayer"></g>'+
+    '</svg>';
+}
+function remoteFeeder(i,name,id){
+  var x=760+i*58;
+  return '<line class="cond '+id+'" x1="720" y1="245" x2="'+x+'" y2="300"/>'+
+    '<line class="cond '+id+'" x1="'+x+'" y1="300" x2="'+x+'" y2="360"/>'+
+    '<rect class="bkr '+id+'-bk" x="'+(x-11)+'" y="360" width="22" height="16" rx="3" fill="#0e1926" stroke="#5a7a9c"/>'+
+    '<line class="'+id+'-blade" x1="'+x+'" y1="360" x2="'+x+'" y2="376" stroke="var(--live)" stroke-width="3"/>'+
+    '<text class="node-lab" x="'+(x-8)+'" y="395" transform="rotate(35 '+x+' 395)" style="font-size:9px">'+name+'</text>';
+}
+
+function startSim(){ stopSim(); SIM.dots=[]; seedDots(); colorCond('c-src','live'); colorCond('c-bus','live'); tick(); }
+function stopSim(){ if(SIM.raf) cancelAnimationFrame(SIM.raf); SIM.raf=null; }
+function seedDots(){
+  // paths as polylines the current dots travel along
+  SIM.paths={
+    src:[[60,150],[180,150],[205,150]],
+    ict:[[205,185],[205,245]],
+    bus:[[205,245],[620,245]],
+    plcc:[[620,245],[720,245]],
+    f:[[720,245],[760,300],[760,360]]
+  };
+  SIM.dots=[];
+  ['src','ict','bus'].forEach(function(k,ki){ for(var i=0;i<5;i++) SIM.dots.push({path:k,p:i/5,off:ki}); });
+}
+function ptOn(path,t){
+  var pts=SIM.paths[path]; var seg=1/(pts.length-1); var i=Math.min(pts.length-2,Math.floor(t/seg)); var lt=(t-i*seg)/seg;
+  return [pts[i][0]+(pts[i+1][0]-pts[i][0])*lt, pts[i][1]+(pts[i+1][1]-pts[i][1])*lt];
+}
+function tick(){
+  SIM.t+=1;
+  // animate energy toward targets
+  var target=SIM.mode==='normal'?{A:405,MW:270,psm:48,relief:0}
+    :SIM.mode==='ict'?{A:810,MW:540,psm:98,relief:196}
+    :SIM.mode==='line'?{A:920,MW:624,psm:90,relief:324}
+    :{A:405,MW:270,psm:0,relief:196};
+  SIM.ictA += (target.A-SIM.ictA)*0.06;
+  SIM.ictMW+= (target.MW-SIM.ictMW)*0.06;
+  SIM.psm  += (target.psm-SIM.psm)*0.06;
+  SIM.relief+=(target.relief-SIM.relief)*0.06;
+  setG('g_ictLoad',Math.round(SIM.ictA)); setG('g_ictPow',Math.round(SIM.ictMW));
+  setG('g_psm',Math.round(SIM.psm)); setG('g_relief',Math.round(SIM.relief));
+  setTxt('lbl_ict',Math.round(SIM.ictA)+' A');
+
+  var picked = (SIM.mode==='ict'&&SIM.psm>53)||(SIM.mode==='line'&&SIM.ictA>800)||(SIM.mode==='uv'&&SIM.psm<40);
+  setTxt('lbl_relay', SIM.mode==='normal'?'MONITOR':(picked?'STAGE-1 TRIP':'PICKING UP'));
+
+  colorCond('c-ict', SIM.ictA>760?'hot':'live');
+  var svg=document.getElementById('sld'); if(!svg){stopSim();return;}
+
+  // feeder shedding when picked
+  ['f1','f2','f3','f4'].forEach(function(id){
+    var shed = picked;
+    svg.querySelectorAll('.'+id).forEach(function(el){ el.classList.toggle('dead',shed); el.classList.toggle('live',!shed); });
+    var blade=svg.querySelector('.'+id+'-blade');
+    if(blade){ blade.setAttribute('x2', shed? (parseFloat(blade.getAttribute('x1'))+11):blade.getAttribute('x1'));
+      blade.setAttribute('stroke', shed?'#33465c':'var(--live)'); }
+  });
+  // PLCC glows when command active
+  svg.querySelectorAll('.c-plcc').forEach(function(el){ el.classList.toggle('hot',picked); });
+
+  drawFlow(picked);
+  document.getElementById('simState').textContent = SIM.mode==='normal'?'NORMAL':(picked?'LTS OPERATED':'ALARM');
+  document.getElementById('simState').className='pill '+(SIM.mode==='normal'?'ok':(picked?'warn':'warn'));
+
+  SIM.raf=requestAnimationFrame(tick);
+}
+function drawFlow(picked){
+  var layer=document.getElementById('flowLayer'); if(!layer)return;
+  var speed=0.006+(SIM.ictA/405-1)*0.004;
+  var html='';
+  SIM.dots.forEach(function(d){
+    d.p+=speed; if(d.p>1)d.p-=1;
+    var pt=ptOn(d.path,d.p);
+    html+='<circle class="flow" cx="'+pt[0].toFixed(1)+'" cy="'+pt[1].toFixed(1)+'" r="3" opacity="'+(d.path==='bus'?.9:.8)+'"/>';
+  });
+  // feeder flow only when NOT shed
+  if(!picked){ for(var f=0;f<4;f++){ var t=(SIM.t*0.02+f*0.25)%1; var x=760+f*58;
+    var y=245+(t*(360-245)); var xx=720+(x-720)*Math.min(1,t*1.8);
+    html+='<circle class="flow" cx="'+xx.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="2.5"/>'; } }
+  layer.innerHTML=html;
+}
+function colorCond(cls,state){ var svg=document.getElementById('sld'); if(!svg)return;
+  svg.querySelectorAll('.'+cls).forEach(function(el){ el.classList.remove('live','hot','dead'); el.classList.add(state); }); }
+function setG(id,v){ var e=document.getElementById(id); if(e)e.textContent=v; }
+function setTxt(id,v){ var e=document.getElementById(id); if(e)e.textContent=v; }
+function simMode(m){ SIM.mode=m; }
+
+/* stop the sim loop when leaving the tab (avoid runaway rAF) */
+var _go=go;
+go=function(t){ if(t!=='sim') stopSim(); _go(t); };
+
+/* init: initial conductor colours once sim view exists is handled by tick */
+</script>
+</body>
+</html>
